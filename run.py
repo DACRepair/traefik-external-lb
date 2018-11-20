@@ -24,6 +24,7 @@ traefik_refresh = int(os.getenv('TRAEFIK_REFRESH', 30))
 
 while True:
     traefik_api = requests.get(url=traefik_api_url + "/api/providers/").json()
+    print(traefik_api)
     rules = {}
     for provider in traefik_api:
         if len(traefik_api[provider]) != 0:
@@ -37,10 +38,11 @@ while True:
                     _rule['backend'] = traefik_api[provider]['backends'][rule]
                     _rule['backend']['servers'] = traefik_fwd
 
-                    _rule['frontend']['backend'] = str(rule + ".").replace('.', '_')
-                    _rule['frontend']['routes'] = {str(rule + ".").replace('.', '_'): _rule['frontend']['routes'][rule]}
-
-                    rules[str(rule).replace('.', '_')] = _rule
+                    if "." in rule:
+                        _rule['frontend']['backend'] = str(rule + ".").replace('.', '_')
+                        _rule['frontend']['routes'] = {str(rule + ".").replace('.', '_'): _rule['frontend']['routes'][rule]}
+                        rule = str(rule).replace('.', '_')
+                    rules[rule] = _rule
 
     output = {'backends': {}, 'frontends': {}}
     for rule in rules:
