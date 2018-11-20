@@ -37,8 +37,8 @@ while True:
                     _rule['backend'] = traefik_api[provider]['backends'][rule]
                     _rule['backend']['servers'] = traefik_fwd
 
-                    _rule['frontend']['backend'] = str(rule).replace('.', '_')
-                    _rule['frontend']['routes'] = {str(rule).replace('.', '_'): _rule['frontend']['routes'][rule]}
+                    _rule['frontend']['backend'] = str(rule + ".").replace('.', '_')
+                    _rule['frontend']['routes'] = {str(rule + ".").replace('.', '_'): _rule['frontend']['routes'][rule]}
 
                     rules[str(rule).replace('.', '_')] = _rule
 
