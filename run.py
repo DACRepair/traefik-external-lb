@@ -23,8 +23,8 @@ traefik_trigger = os.getenv('TRAEFIK_TRIGGER', 'external')
 
 traefik_refresh = int(os.getenv('TRAEFIK_REFRESH', 30))
 
-while True:
-    try:
+try:
+    while True:
         rules = {}
         for provider in traefik_api:
             if len(traefik_api[provider]) != 0:
@@ -51,8 +51,9 @@ while True:
         output = toml.dumps(output)
 
         with open(os.path.normpath(os.getcwd() + "/config/rules.toml"), 'w') as f:
+            print('Updating Config')
             f.write(output)
             f.close()
         time.sleep(traefik_refresh)
-    except:
-        exit(1)
+except:
+    exit(1)
