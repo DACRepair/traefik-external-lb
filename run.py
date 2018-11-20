@@ -14,7 +14,7 @@ traefik_fwd_ssl = str(os.getenv('TRAEFIK_FWD_SSL', 'TRUE')).lower()
 traefik_api_url = "https://" if traefik_api_ssl == 'true' else "http://"
 traefik_api_url += traefik_host + ":" + traefik_api_port
 
-traefik_fwd_url = "https://" if traefik_api_ssl == 'true' else "http://"
+traefik_fwd_url = "https://" if traefik_fwd_ssl == 'true' else "http://"
 traefik_fwd_url += traefik_host + ":" + traefik_fwd_port
 traefik_fwd = {'fwd-host': {'url': traefik_fwd_url, 'weight': 1}}
 
