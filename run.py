@@ -13,7 +13,6 @@ traefik_fwd_ssl = str(os.getenv('TRAEFIK_FWD_SSL', 'TRUE')).lower()
 
 traefik_api_url = "https://" if traefik_api_ssl == 'true' else "http://"
 traefik_api_url += traefik_host + ":" + traefik_api_port
-traefik_api = requests.get(url=traefik_api_url + "/api/providers/").json()
 
 traefik_fwd_url = "https://" if traefik_api_ssl == 'true' else "http://"
 traefik_fwd_url += traefik_host + ":" + traefik_api_port
@@ -25,6 +24,7 @@ traefik_refresh = int(os.getenv('TRAEFIK_REFRESH', 30))
 
 try:
     while True:
+        traefik_api = requests.get(url=traefik_api_url + "/api/providers/").json()
         rules = {}
         for provider in traefik_api:
             if len(traefik_api[provider]) != 0:
