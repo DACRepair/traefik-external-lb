@@ -17,3 +17,6 @@ COPY requirements.txt /opt/traefik/
 COPY run.py /opt/traefik/
 
 RUN pip install -r requirements.txt
+RUN mkdir config
+
+CMD ["python", "./run.py"]

@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 import toml
 
 traefik_host = os.getenv('TRAEFIK_HOST', "10.1.0.34")
@@ -22,32 +23,36 @@ traefik_trigger = os.getenv('TRAEFIK_TRIGGER', 'external')
 
 traefik_refresh = int(os.getenv('TRAEFIK_REFRESH', 30))
 
-rules = {}
-for provider in traefik_api:
-    if len(traefik_api[provider]) != 0:
-        for rule in traefik_api[provider]['frontends']:
-            if traefik_trigger in traefik_api[provider]['frontends'][rule]['entryPoints']:
-                _rule = dict()
+while True:
+    try:
+        rules = {}
+        for provider in traefik_api:
+            if len(traefik_api[provider]) != 0:
+                for rule in traefik_api[provider]['frontends']:
+                    if traefik_trigger in traefik_api[provider]['frontends'][rule]['entryPoints']:
+                        _rule = dict()
 
-                _rule['frontend'] = traefik_api[provider]['frontends'][rule]
-                _rule['frontend']['entryPoints'].remove(traefik_trigger)
+                        _rule['frontend'] = traefik_api[provider]['frontends'][rule]
+                        _rule['frontend']['entryPoints'].remove(traefik_trigger)
 
-                _rule['backend'] = traefik_api[provider]['backends'][rule]
-                _rule['backend']['servers'] = traefik_fwd
+                        _rule['backend'] = traefik_api[provider]['backends'][rule]
+                        _rule['backend']['servers'] = traefik_fwd
 
-                _rule['frontend']['backend'] = str(rule).replace('.', '_')
-                _rule['frontend']['routes'] = {str(rule).replace('.', '_'): _rule['frontend']['routes'][rule]}
+                        _rule['frontend']['backend'] = str(rule).replace('.', '_')
+                        _rule['frontend']['routes'] = {str(rule).replace('.', '_'): _rule['frontend']['routes'][rule]}
 
-                rules[str(rule).replace('.', '_')] = _rule
+                        rules[str(rule).replace('.', '_')] = _rule
 
-output = {'backends': {}, 'frontends': {}}
-for rule in rules:
-    output['backends'][rule] = rules[rule]['backend']
-    output['frontends'][rule] = rules[rule]['frontend']
+        output = {'backends': {}, 'frontends': {}}
+        for rule in rules:
+            output['backends'][rule] = rules[rule]['backend']
+            output['frontends'][rule] = rules[rule]['frontend']
 
-output = toml.dumps(output)
+        output = toml.dumps(output)
 
-with open(os.path.normpath(os.getcwd() + "/config/rules.toml"), 'w') as f:
-    f.write(output)
-    f.close()
-
+        with open(os.path.normpath(os.getcwd() + "/config/rules.toml"), 'w') as f:
+            f.write(output)
+            f.close()
+        time.sleep(traefik_refresh)
+    except:
+        exit(1)
