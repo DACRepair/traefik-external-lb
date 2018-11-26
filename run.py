@@ -39,8 +39,8 @@ while True:
                     _rule['backend']['servers'] = traefik_fwd
 
                     if "." in rule:
-                        _rule['frontend']['backend'] = str(rule + ".").replace('.', '_')
-                        _rule['frontend']['routes'] = {str(rule + ".").replace('.', '_'): _rule['frontend']['routes'][rule]}
+                        _rule['frontend']['backend'] = str(rule + ".").replace('.', '_').rstrip('_')
+                        _rule['frontend']['routes'] = {str(rule + ".").replace('.', '_').rstrip('_'): _rule['frontend']['routes'][rule]}
                         rule = str(rule).replace('.', '_').rstrip('_')
                     rules[rule] = _rule
 
