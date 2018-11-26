@@ -41,7 +41,7 @@ while True:
                     if "." in rule:
                         _rule['frontend']['backend'] = str(rule + ".").replace('.', '_')
                         _rule['frontend']['routes'] = {str(rule + ".").replace('.', '_'): _rule['frontend']['routes'][rule]}
-                        rule = str(rule).replace('.', '_')
+                        rule = str(rule).replace('.', '_').rstrip('_')
                     rules[rule] = _rule
 
     output = {'backends': {}, 'frontends': {}}
