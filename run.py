@@ -24,7 +24,6 @@ traefik_refresh = int(os.getenv('TRAEFIK_REFRESH', 30))
 
 while True:
     traefik_api = requests.get(url=traefik_api_url + "/api/providers/").json()
-    print(traefik_api)
     rules = {}
     for provider in traefik_api:
         if len(traefik_api[provider]) != 0:
