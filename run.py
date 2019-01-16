@@ -87,4 +87,5 @@ while True:
         print("Error: {}".format(error))
         break
     else:
+        print(len(payload.keys()))
         time.sleep(int(os.getenv("TRAEFIK_EXTERNAL_REFRESH", 60)))
