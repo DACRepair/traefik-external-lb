@@ -43,11 +43,11 @@ external_backends = {
     }
 }
 
-external_frontends = {}
-error = None
-payload = {'frontends': {}, 'backends': {}}
 while True:
     try:
+        external_frontends = {}
+        error = None
+        payload = {'frontends': {}, 'backends': {}}
         traefik_internal = requests.get('{}/api/providers'.format(traefik_internal_api))
         if traefik_internal.status_code == 200:
             traefik_internal_json = traefik_internal.json()
