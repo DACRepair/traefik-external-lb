@@ -43,9 +43,9 @@ external_backends = {
     }
 }
 
-external_frontends = {'frontends': {}, 'backends': {}}
+external_frontends = {}
 error = None
-payload = {}
+payload = {'frontends': {}, 'backends': {}}
 while True:
     try:
         traefik_internal = requests.get('{}/api/providers'.format(traefik_internal_api))
