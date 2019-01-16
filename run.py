@@ -2,6 +2,7 @@ import json
 import os
 import requests
 import time
+import traceback
 
 # Internal API URL
 if str(os.getenv('TRAEFIK_INTERNAL_APISSL', None)).lower() in ['true']:
@@ -74,7 +75,8 @@ while True:
         else:
             error = 2
     except Exception as e:
-        error = str(e)
+        error = "{}".format(e)
+        traceback.print_exc()
 
     if error is not None:
         errors = {
@@ -86,4 +88,4 @@ while True:
         print("Error: {}".format(error))
         break
     else:
-        time.sleep(10)
+        time.sleep(int(os.getenv("TRAEFIK_EXTERNAL_REFRESH", 60)))
