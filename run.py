@@ -1,57 +1,89 @@
+import json
 import os
 import requests
 import time
-import toml
 
-traefik_host = os.getenv('TRAEFIK_HOST', "10.1.0.34")
+# Internal API URL
+if str(os.getenv('TRAEFIK_INTERNAL_APISSL', None)).lower() in ['true']:
+    traefik_internal_api = "https://"
+else:
+    traefik_internal_api = "http://"
+traefik_internal_api += str(os.getenv('TRAEFIK_INTERNAL_HOST', 'traefik-internal')) + ":"
+traefik_internal_api += str(os.getenv('TRAEFIK_INTERNAL_APIPORT', '8080'))
 
-traefik_api_port = os.getenv('TRAEFIK_API_PORT', '8080')
-traefik_api_ssl = str(os.getenv('TRAEFIK_API_SSL', 'FALSE')).lower()
+# Internal Backend URL
+if str(os.getenv('TRAEFIK_INTERNAL_BACKENDSSL', None)).lower() in ['true']:
+    traefik_internal_backend = "https://"
+else:
+    traefik_internal_backend = "http://"
+traefik_internal_backend += str(os.getenv('TRAEFIK_INTERNAL_HOST', 'traefik-internal')) + ":"
+traefik_internal_backend += str(os.getenv('TRAEFIK_INTERNAL_BACKENDPORT', 80))
 
-traefik_fwd_port = os.getenv('TRAEFIK_FWD_PORT', '443')
-traefik_fwd_ssl = str(os.getenv('TRAEFIK_FWD_SSL', 'TRUE')).lower()
+# External Traefik API
+if str(os.getenv('TRAEFIK_EXTERNAL_APISSL', None)).lower() in ['true']:
+    traefik_external_api = "https://"
+else:
+    traefik_external_api = "http://"
+traefik_external_api += str(os.getenv('TRAEFIK_EXTERNAL_HOST', 'traefik-external')) + ":"
+traefik_external_api += str(os.getenv('TRAEFIK_EXTERNAL_APIPORT', '8080'))
 
-traefik_api_url = "https://" if traefik_api_ssl == 'true' else "http://"
-traefik_api_url += traefik_host + ":" + traefik_api_port
+# Set External API hook
+traefik_external_hook = str(os.getenv('TRAEFIK_EXTERNAL_HOOK', 'external'))
 
-traefik_fwd_url = "https://" if traefik_fwd_ssl == 'true' else "http://"
-traefik_fwd_url += traefik_host + ":" + traefik_fwd_port
-traefik_fwd = {'fwd-host': {'url': traefik_fwd_url, 'weight': 1}}
+external_backends = {
+    'internal': {
+        'loadBalancer': {'method': 'drr'},
+        'servers': {
+            'server0': {
+                'weight': 1,
+                'url': traefik_internal_backend
+            }
+        }
+    }
+}
 
-traefik_trigger = os.getenv('TRAEFIK_TRIGGER', 'external')
-
-traefik_refresh = int(os.getenv('TRAEFIK_REFRESH', 30))
-
+external_frontends = {'frontends': {}, 'backends': {}}
+error = None
+payload = {}
 while True:
-    traefik_api = requests.get(url=traefik_api_url + "/api/providers/").json()
-    rules = {}
-    for provider in traefik_api:
-        if len(traefik_api[provider]) != 0:
-            for rule in traefik_api[provider]['frontends']:
-                if traefik_trigger in traefik_api[provider]['frontends'][rule]['entryPoints']:
-                    _rule = dict()
+    try:
+        traefik_internal = requests.get('{}/api/providers'.format(traefik_internal_api))
+        if traefik_internal.status_code == 200:
+            traefik_internal_json = traefik_internal.json()
+            for backend in traefik_internal_json.keys():
+                frontends = traefik_internal_json[backend]['frontends']
+                for frontend in frontends:
+                    if traefik_external_hook in frontends[frontend]['entryPoints']:
+                        temp = {}
+                        for key, value in frontends[frontend].items():
+                            if key in ['entryPoints', 'passHostHeader', 'redirect', 'routes']:
+                                temp[key] = value
+                        external_frontends[frontend] = temp
+                        external_frontends[frontend]['backend'] = 'internal'
+                        external_frontends[frontend]['entryPoints'].remove(traefik_external_hook)
+            if payload['frontends'] != external_frontends:
+                payload = {
+                    'frontends': external_frontends,
+                    'backends': external_backends
+                }
+                external_push = requests.put('{}/api/providers/web'.format(traefik_external_api), json.dumps(payload))
+                if external_push.status_code != 200:
+                    error = 1
+            else:
+                pass
+        else:
+            error = 2
+    except Exception as e:
+        error = str(e)
 
-                    _rule['frontend'] = traefik_api[provider]['frontends'][rule]
-                    _rule['frontend']['entryPoints'].remove(traefik_trigger)
-
-                    _rule['backend'] = traefik_api[provider]['backends'][rule]
-                    _rule['backend']['servers'] = traefik_fwd
-
-                    if "." in rule:
-                        _rule['frontend']['backend'] = str(rule + ".").replace('.', '_').rstrip('_')
-                        _rule['frontend']['routes'] = {str(rule + ".").replace('.', '_').rstrip('_'): _rule['frontend']['routes'][rule]}
-                        rule = str(rule).replace('.', '_').rstrip('_')
-                    rules[rule] = _rule
-
-    output = {'backends': {}, 'frontends': {}}
-    for rule in rules:
-        output['backends'][rule] = rules[rule]['backend']
-        output['frontends'][rule] = rules[rule]['frontend']
-
-    output = toml.dumps(output)
-
-    with open(os.path.normpath(os.getcwd() + "/config/rules.toml"), 'w') as f:
-        print('Updating Config')
-        f.write(output)
-        f.close()
-    time.sleep(traefik_refresh)
+    if error is not None:
+        errors = {
+            1: "Invalid external API: {}".format(traefik_external_api),
+            2: 'Invalid internal API: {}'.format(traefik_internal_api),
+        }
+        if error in errors:
+            error = errors[error]
+        print("Error: {}".format(error))
+        break
+    else:
+        time.sleep(10)
