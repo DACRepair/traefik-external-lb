@@ -62,14 +62,13 @@ while True:
                         external_frontends[frontend] = temp
                         external_frontends[frontend]['backend'] = 'internal'
                         external_frontends[frontend]['entryPoints'].remove(traefik_external_hook)
-            if payload['frontends'] != external_frontends:
-                payload = {
-                    'frontends': external_frontends,
-                    'backends': external_backends
-                }
-                external_push = requests.put('{}/api/providers/web'.format(traefik_external_api), json.dumps(payload))
-                if external_push.status_code != 200:
-                    error = 1
+            payload = {
+                'frontends': external_frontends,
+                'backends': external_backends
+            }
+            external_push = requests.put('{}/api/providers/web'.format(traefik_external_api), json.dumps(payload))
+            if external_push.status_code != 200:
+                error = 1
             else:
                 pass
         else:
