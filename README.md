@@ -33,8 +33,9 @@ docker -d --name traefik-external-lb \
 
 How it works:
 ```text
+|-----------------------------|                         |------------------------------|                         |------------------|
 |                    REST API | <----- Rest Calls ----- | REST API                     |                         | [Custom Routes ] |
 | [External Traefik Instance] |                         | [Internal Traffic Instance ] | < -- HTTP(S) Traffic -- | [Microservices]  |
 |             HTTP(S) Traffic | <-- HTTP(S) Traffic --> | HTTP(S) Traffic              |                         | [Other]          |
-
+|-----------------------------|                         |------------------------------|                         |------------------|
 ```
