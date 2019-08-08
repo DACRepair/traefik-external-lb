@@ -53,16 +53,20 @@ try:
             if traefik_internal.status_code == 200:
                 traefik_internal_json = traefik_internal.json()
                 for backend in traefik_internal_json.keys():
-                    frontends = traefik_internal_json[backend]['frontends']
-                    for frontend in frontends:
-                        if traefik_external_hook in frontends[frontend]['entryPoints']:
-                            temp = {}
-                            for key, value in frontends[frontend].items():
-                                if key in ['entryPoints', 'passHostHeader', 'redirect', 'routes']:
-                                    temp[key] = value
-                            external_frontends[frontend] = temp
-                            external_frontends[frontend]['backend'] = 'internal'
-                            external_frontends[frontend]['entryPoints'].remove(traefik_external_hook)
+                    frontends = traefik_internal_json[backend]
+                    if 'frontends' in frontends.keys():
+                        frontends = frontends['frontends']
+                        for frontend in frontends:
+                            if traefik_external_hook in frontends[frontend]['entryPoints']:
+                                temp = {}
+                                for key, value in frontends[frontend].items():
+                                    if key in ['entryPoints', 'passHostHeader', 'redirect', 'routes']:
+                                        temp[key] = value
+                                external_frontends[frontend] = temp
+                                external_frontends[frontend]['backend'] = 'internal'
+                                external_frontends[frontend]['entryPoints'].remove(traefik_external_hook)
+                    else:
+                        pass
                 payload = {
                     'frontends': external_frontends,
                     'backends': external_backends
